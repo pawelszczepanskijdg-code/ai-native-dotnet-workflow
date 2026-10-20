@@ -18,5 +18,18 @@
       "Edit(./.env.*)",
       "Bash(git push *)"
     ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PROJECT_DIR}/.claude/hooks/require-plan-approval.sh\""
+          }
+        ]
+      }
+    ]
   }
 }
