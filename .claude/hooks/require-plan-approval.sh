@@ -9,8 +9,14 @@ input=$(cat)
 project_dir="${CLAUDE_PROJECT_DIR:-$(pwd)}"
 marker="$project_dir/.claude/.plan-approved"
 
-# JSON on stdin; extract fields without jq. Normalise escaped Windows backslashes.
-field() { printf '%s' "$input" | sed -n "s/.*\"$1\"[[:space:]]*:[[:space:]]*\"\([^\"]*\)\".*/\1/p" | head -n1 | sed 's#\\#/#g'; }
+# JSON on stdin; extract a string field without jq and turn Windows
+# backslashes (JSON-escaped as \\) into forward slashes.
+field() {
+  printf '%s' "$input" \
+    | sed -n "s/.*\"$1\"[[:space:]]*:[[:space:]]*\"\([^\"]*\)\".*/\1/p" \
+    | head -n1 \
+    | sed 's#\\\\#/#g; s#\\#/#g'
+}
 tool=$(field tool_name)
 
 if [ "$tool" = "Bash" ]; then
@@ -39,6 +45,9 @@ case "$path" in
 esac
 
 case "$path" in
+  */.claude/*|.claude/*)
+    # Agent configuration (including hook tests under .claude/hooks/tests/) is not application code.
+    exit 0 ;;
   */src/*|src/*|*/tests/*|tests/*)
     if [ ! -f "$marker" ]; then
       echo "Blocked: no approved plan. Write PLAN.md, ask the human to review it, and wait for approval (they run: ! bash .claude/hooks/approve-plan.sh)." >&2
